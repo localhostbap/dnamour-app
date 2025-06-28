@@ -42,14 +42,21 @@ of compatibility.
 🎥 [How to download your 23andMe data](https://www.youtube.com/watch?v=1vf-IjMmJXE)
 """)
 
+
+
+# Retrieve the PayPal hosted button ID from Streamlit secrets
+paypal_button_id = st.secrets["PAYPAL_HOSTED_BUTTON_ID"]
+
 # Donation prompt
-st.markdown("""
+st.markdown(f"""
 <div class='pulse' style='background-color:#fff0f5;padding:15px;border-radius:10px;text-align:center'>
 💖 <b>Enjoying DNAmour?</b><br>
 If this made you smile or feel closer,<br>
-<a href='https://www.paypal.com/donate/?hosted_button_id=RGPSQ9FUYA89L' target='_blank'>👉 Donate via PayPal</a>
+<a href='https://www.paypal.com/donate/?hosted_button_id={paypal_button_id}' target='_blank'>👉 Donate via PayPal</a>
 </div>
 """, unsafe_allow_html=True)
+
+
 
 # Relevant SNPs
 relevant_snps = {
