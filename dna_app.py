@@ -8,6 +8,7 @@ from datetime import datetime
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import landscape, A4
 from reportlab.lib.colors import HexColor
+import html  # Import html for input sanitization
 
 
 # --- PayPal API Credentials ---
@@ -236,6 +237,10 @@ if file1 and file2:
     st.markdown("### 📜 Claim Your Love Certificate")
     name1 = st.text_input("Your Name", "Type your name here ")
     name2 = st.text_input("Partner's Name", " Type your partner's name here")
+
+    # Sanitize the user inputs to prevent XSS attacks
+    name1 = html.escape(name1)
+    name2 = html.escape(name2)
 
     if name1 and name2:
         pdf = generate_certificate(score, breakdown, (name1, name2))
