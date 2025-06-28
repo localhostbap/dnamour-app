@@ -1,7 +1,14 @@
 import streamlit as st
+import pandas as pd  # Add this import to use pandas
 import requests
 from requests.auth import HTTPBasicAuth
 import json
+from io import BytesIO
+from datetime import datetime
+from reportlab.pdfgen import canvas
+from reportlab.lib.pagesizes import landscape, A4
+from reportlab.lib.colors import HexColor
+
 
 # --- PayPal API Credentials ---
 # Retrieve PayPal credentials from Streamlit secrets
