@@ -17,7 +17,7 @@ paypal_secret = st.secrets["paypal"]["secret"]
 
 # Step 1: Get PayPal Access Token
 def get_paypal_access_token():
-    url = "https://api.sandbox.paypal.com/v1/oauth2/token"
+    url = "https://api.paypal.com/v1/oauth2/token"
     headers = {
         "Accept": "application/json",
         "Content-Type": "application/x-www-form-urlencoded"
@@ -39,7 +39,7 @@ def create_paypal_payment(amount):
     if access_token is None:
         return None
     
-    url = "https://api.sandbox.paypal.com/v1/payments/payment"
+    url = "https://api.paypal.com/v1/payments/payment"
     headers = {
         "Authorization": f"Bearer {access_token}",
         "Content-Type": "application/json"
