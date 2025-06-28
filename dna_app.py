@@ -11,7 +11,7 @@ from reportlab.lib.colors import HexColor
 
 
 # --- PayPal API Credentials ---
-# Retrieve PayPal credentials from Streamlit secrets
+# Retrieve PayPal credentials securely from Streamlit secrets
 paypal_client_id = st.secrets["paypal"]["client_id"]
 paypal_secret = st.secrets["paypal"]["secret"]
 
@@ -25,12 +25,14 @@ def get_paypal_access_token():
     data = {
         "grant_type": "client_credentials"
     }
-    # PayPal authentication
-    response = requests.post(url, data=data, headers=headers, auth=HTTPBasicAuth(paypal_client_id, paypal_secret))
-    if response.status_code == 200:
+    
+    try:
+        # PayPal authentication
+        response = requests.post(url, data=data, headers=headers, auth=HTTPBasicAuth(paypal_client_id, paypal_secret))
+        response.raise_for_status()  # Raise an exception for non-200 status codes
         return response.json()['access_token']
-    else:
-        st.error("Error obtaining access token from PayPal.")
+    except requests.exceptions.RequestException as e:
+        st.error(f"Error obtaining access token from PayPal: {e}")
         return None
 
 # Step 2: Create PayPal Payment
@@ -45,7 +47,6 @@ def create_paypal_payment(amount):
         "Content-Type": "application/json"
     }
     
-    # Payment data (replace the URL with your return and cancel URLs)
     data = {
         "intent": "sale",
         "payer": {
@@ -63,16 +64,16 @@ def create_paypal_payment(amount):
             "cancel_url": "https://dnamour.streamlit.app/"   # Update this URL
         }
     }
-    
-    response = requests.post(url, json=data, headers=headers)
-    
-    if response.status_code == 201:
+
+    try:
+        response = requests.post(url, json=data, headers=headers)
+        response.raise_for_status()  # Raise an exception for non-200 status codes
+        
         payment_data = response.json()
-        # Redirect user to PayPal approval URL
         approval_url = next(link['href'] for link in payment_data['links'] if link['rel'] == 'approval_url')
         return approval_url
-    else:
-        st.error("Error creating payment with PayPal.")
+    except requests.exceptions.RequestException as e:
+        st.error(f"Error creating payment with PayPal: {e}")
         return None
 
 # Step 3: Implement the PayPal button and payment flow
@@ -143,8 +144,15 @@ relevant_snps = {
 
 # Load DNA
 def load_23andme(file):
-    df = pd.read_csv(file, sep='\t', comment='#', names=['rsid', 'chromosome', 'position', 'genotype'])
-    return df[df['rsid'].isin(relevant_snps)].set_index('rsid')['genotype'].to_dict()
+    try:
+        df = pd.read_csv(file, sep='\t', comment='#', names=['rsid', 'chromosome', 'position', 'genotype'])
+        if not all(col in df.columns for col in ['rsid', 'chromosome', 'position', 'genotype']):
+            st.error("File format is incorrect. Please upload a valid 23andMe file.")
+            return {}
+        return df[df['rsid'].isin(relevant_snps)].set_index('rsid')['genotype'].to_dict()
+    except Exception as e:
+        st.error(f"An error occurred while processing the file: {e}")
+        return {}
 
 # Compatibility logic
 def compute_compatibility(p1, p2):
