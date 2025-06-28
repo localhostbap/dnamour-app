@@ -1,12 +1,74 @@
 import streamlit as st
-import pandas as pd
-import matplotlib.pyplot as plt
-from io import BytesIO
-from datetime import datetime
-from reportlab.pdfgen import canvas
-from reportlab.lib.pagesizes import landscape, A4
-from reportlab.lib.colors import HexColor
+import requests
+from requests.auth import HTTPBasicAuth
+import json
 
+# --- PayPal API Credentials ---
+# Retrieve PayPal credentials from Streamlit secrets
+paypal_client_id = st.secrets["paypal"]["client_id"]
+paypal_secret = st.secrets["paypal"]["secret"]
+
+# Step 1: Get PayPal Access Token
+def get_paypal_access_token():
+    url = "https://api.sandbox.paypal.com/v1/oauth2/token"
+    headers = {
+        "Accept": "application/json",
+        "Content-Type": "application/x-www-form-urlencoded"
+    }
+    data = {
+        "grant_type": "client_credentials"
+    }
+    # PayPal authentication
+    response = requests.post(url, data=data, headers=headers, auth=HTTPBasicAuth(paypal_client_id, paypal_secret))
+    if response.status_code == 200:
+        return response.json()['access_token']
+    else:
+        st.error("Error obtaining access token from PayPal.")
+        return None
+
+# Step 2: Create PayPal Payment
+def create_paypal_payment(amount):
+    access_token = get_paypal_access_token()
+    if access_token is None:
+        return None
+    
+    url = "https://api.sandbox.paypal.com/v1/payments/payment"
+    headers = {
+        "Authorization": f"Bearer {access_token}",
+        "Content-Type": "application/json"
+    }
+    
+    # Payment data (replace the URL with your return and cancel URLs)
+    data = {
+        "intent": "sale",
+        "payer": {
+            "payment_method": "paypal"
+        },
+        "transactions": [{
+            "amount": {
+                "total": str(amount),
+                "currency": "USD"
+            },
+            "description": "DNAmour Donation"
+        }],
+        "redirect_urls": {
+            "return_url": "https://dnamour.streamlit.app/",  # Update this URL
+            "cancel_url": "https://dnamour.streamlit.app/"   # Update this URL
+        }
+    }
+    
+    response = requests.post(url, json=data, headers=headers)
+    
+    if response.status_code == 201:
+        payment_data = response.json()
+        # Redirect user to PayPal approval URL
+        approval_url = next(link['href'] for link in payment_data['links'] if link['rel'] == 'approval_url')
+        return approval_url
+    else:
+        st.error("Error creating payment with PayPal.")
+        return None
+
+# Step 3: Implement the PayPal button and payment flow
 st.set_page_config(page_title="DNAmour 💖", layout="centered")
 
 # --- Styling ---
@@ -42,21 +104,25 @@ of compatibility.
 🎥 [How to download your 23andMe data](https://www.youtube.com/watch?v=1vf-IjMmJXE)
 """)
 
-
-
-# Retrieve the PayPal hosted button ID from Streamlit secrets
-paypal_button_id = st.secrets["PAYPAL_HOSTED_BUTTON_ID"]
-
-# Donation prompt
+# Donation prompt and button
 st.markdown(f"""
 <div class='pulse' style='background-color:#fff0f5;padding:15px;border-radius:10px;text-align:center'>
 💖 <b>Enjoying DNAmour?</b><br>
 If this made you smile or feel closer,<br>
-<a href='https://www.paypal.com/donate/?hosted_button_id={paypal_button_id}' target='_blank'>👉 Donate via PayPal</a>
 </div>
 """, unsafe_allow_html=True)
 
-
+# Donation button and flow
+if st.button("Donate via PayPal"):
+    amount = 20  # Example donation amount (change as needed)
+    approval_url = create_paypal_payment(amount)
+    
+    if approval_url:
+        st.markdown(f"""
+        <a href="{approval_url}" target="_blank">
+        <button style="background-color: #0070ba; color: white; padding: 10px 20px; border-radius: 5px; font-size: 18px;">Donate $20</button>
+        </a>
+        """, unsafe_allow_html=True)
 
 # Relevant SNPs
 relevant_snps = {
