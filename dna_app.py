@@ -146,8 +146,8 @@ if file1 and file2:
     score, breakdown = compute_compatibility(p1, p2)
 
     st.markdown("### 📜 Claim Your Love Certificate")
-    name1 = st.text_input("Your Name", " ")
-    name2 = st.text_input("Partner's Name", " ")
+    name1 = st.text_input("Your Name", "Type your name here ")
+    name2 = st.text_input("Partner's Name", " Type your partner's name here")
 
     if name1 and name2:
         pdf = generate_certificate(score, breakdown, (name1, name2))
